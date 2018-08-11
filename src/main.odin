@@ -69,9 +69,17 @@ main :: proc()
     for i in 0..max {
         b_slice[i] = set.create_bounce(&random);
     }
-    
     add_timer :f32= 200.0;
     
+    power_ups := make([]set.power_up_set, 50);
+    p_index :i32 = 0;
+    power_up_now := false;
+    power_timer :f32 = 100.0;// * rand.float32(random);
+    max_power_timer :f32 = 100.0;
+    for i in 0..50 {
+        power_ups[i] = set.create_power_up(&random);
+    }
+
     background := renderer.init_sprite(math.v2{16.0/2.0, 9.0/2.0}, math.v2{4, 3}, "art/background.png");
     
     coin := set.create_coin(&random);
@@ -79,6 +87,8 @@ main :: proc()
     
     hearts := set.create_heart(v2{13, 8.5});
     
+    power_up := set.create_power_up(&random);
+
     maxFPS := 60.0;
     maxPeriod := 1.0 / maxFPS;
     lastTime := 0.0;
@@ -100,7 +110,24 @@ main :: proc()
         
         set.draw_coin(&coin, program, pr_matrix);
         set.update_coin(&coin, &player, &random);
-        
+
+        if power_up_now{
+            set.draw_power_up(&power_ups[p_index], program, pr_matrix);
+            u, i := set.update_power_up(&power_ups[p_index], &player, &random, p_index);
+            if u {
+                max = 5;
+            }
+            if i != p_index {
+                power_up_now = false;
+            }
+            p_index = i;
+        } else {
+            power_timer -= delta;
+            if power_timer <= 0.0 {
+                power_up_now = true;
+                power_timer = max_power_timer;
+            }
+        }
         set.draw_coin_ui(&coins, player, program, pr_matrix);
         
         set.draw_hearts(&hearts, player, program, pr_matrix);

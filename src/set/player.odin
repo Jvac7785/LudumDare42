@@ -17,6 +17,7 @@ player_set :: struct {
     invincible: bool,
     timer: f32,
     score: i32,
+    speed: f32,
 }
 //Player stuff
 create_player :: proc(pos, dim: math.v2) -> player_set {
@@ -31,21 +32,23 @@ create_player :: proc(pos, dim: math.v2) -> player_set {
     result.invincible = false;
     result.timer = 0;
     
+    result.speed = .05;
+
     return result;
 }
 
 update_player :: proc(player: ^player_set, input: input.game_input, bounce: ^[]bounce_set, max: i32, delta: f32) {
     if input.up {
-        player.velocity.y += .05 * delta;
+        player.velocity.y += player.speed * delta;
     }
     if input.down {
-        player.velocity.y -= .05 * delta;
+        player.velocity.y -= player.speed * delta;
     }
     if input.left {
-        player.velocity.x -= .05 * delta;
+        player.velocity.x -= player.speed * delta;
     }
     if input.right {
-        player.velocity.x += .05 * delta;
+        player.velocity.x += player.speed * delta;
     }
     player.sprite.transform.pos.x += player.velocity.x;
     player.sprite.transform.pos.y += player.velocity.y;
@@ -275,9 +278,39 @@ create_power_up :: proc(random: ^rand.Rand) -> power_up_set {
 	result: power_up_set;
     rand_vec := math.v2{rand.float32(random) * 16, rand.float32(random) * 9};
     
-    rand := rand.uint32(random) % 2;
-    result.sprite.sprite = renderer.init_sprite(rand_vec, math.v2{0.65, 0.65}, "art/pickup.png");
+    rand_type := rand.uint32(random) % 3;
+
+    switch rand_type {
+    	case 0 : result.p_type = power_up_type.HEALTH;
+    	case 1 : result.p_type = power_up_type.SPEED;
+    	case 2 : result.p_type = power_up_type.REMOVE;
+    }
+
+    switch result.p_type {
+    	case power_up_type.HEALTH : result.sprite.sprite = renderer.init_sprite(rand_vec, math.v2{0.65, 0.65}, "art/health.png");
+    	case power_up_type.SPEED : result.sprite.sprite = renderer.init_sprite(rand_vec, math.v2{0.65, 0.65}, "art/speed.png");
+    	case power_up_type.REMOVE : result.sprite.sprite = renderer.init_sprite(rand_vec, math.v2{0.65, 0.65}, "art/remove.png");
+    }
     result.aabb.transform = result.sprite.transform;
     
     return result;
+}
+
+draw_power_up :: proc(power_up: ^power_up_set, program: u32, pr_matrix: math.mat4) {
+    renderer.use_program(program);
+    renderer.set_uniforms(power_up.sprite.transform, pr_matrix, program);
+    renderer.draw_sprite(&power_up.sprite);	
+}
+
+update_power_up :: proc(power_up: ^power_up_set, player: ^player_set, random: ^rand.Rand, index: i32) -> (bool, i32) {
+	if aabb_against_aabb(player.aabb, power_up.aabb){
+		switch power_up.p_type {
+    		case power_up_type.HEALTH : player.health += 1;
+    		case power_up_type.SPEED : player.speed += .0025;
+    		case power_up_type.REMOVE : return true, (index + 1);
+    	}
+    	//TODO: Put this on a timer so when you get a powerup another one takes some time to spawn
+    	return false, (index + 1);
+	}
+    return false, index;
 }
