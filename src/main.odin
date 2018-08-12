@@ -11,6 +11,7 @@ import "set"
 
 import "renderer"
 import "input"
+import "audio"
 using import "math"
 
 keys: [348]bool;
@@ -20,6 +21,12 @@ Window_Dim :: struct
 {
     x: i32,
     y: i32,
+}
+
+Game_State :: enum {
+    MENU,
+    GAME,
+    LOSE,
 }
 
 main :: proc()
@@ -95,6 +102,10 @@ main :: proc()
     
     game_input: input.game_input;
     
+    state := Game_State.MENU;
+    play_button := set.create_button(math.v2{16.0/2.0, 6.5}, set.button_type.PLAY);
+    quit_button := set.create_button(math.v2{16.0/2.0, 4}, set.button_type.QUIT);
+
     for !glfw.WindowShouldClose(window){
         time := glfw.GetTime();
         delta := cast(f32)(time - lastTime);
@@ -105,50 +116,58 @@ main :: proc()
         
         gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         
-        set.draw_player(&player, program, pr_matrix);
-        set.update_player(&player, game_input, &b_slice, max, delta);
-        
-        set.draw_coin(&coin, program, pr_matrix);
-        set.update_coin(&coin, &player, &random);
+        if state == Game_State.MENU {
+            max = 6;
+            player.score = 0;
+            set.draw_button(&play_button, program, pr_matrix);
+            set.draw_button(&quit_button, program, pr_matrix);
+        }
 
-        if power_up_now{
-            set.draw_power_up(&power_ups[p_index], program, pr_matrix);
-            u, i := set.update_power_up(&power_ups[p_index], &player, &random, p_index);
-            if u {
-                max = 5;
+        if state == Game_State.GAME{
+            set.draw_player(&player, program, pr_matrix);
+            set.update_player(&player, game_input, &b_slice, max, delta);
+            
+            set.draw_coin(&coin, program, pr_matrix);
+            set.update_coin(&coin, &player, &random);
+
+            if power_up_now{
+                set.draw_power_up(&power_ups[p_index], program, pr_matrix);
+                u, i := set.update_power_up(&power_ups[p_index], &player, &random, p_index);
+                if u {
+                    max = 5;
+                }
+                if i != p_index {
+                    power_up_now = false;
+                }
+                p_index = i;
+            } else {
+                power_timer -= delta;
+                if power_timer <= 0.0 {
+                    power_up_now = true;
+                    power_timer = max_power_timer;
+                }
             }
-            if i != p_index {
-                power_up_now = false;
+            set.draw_coin_ui(&coins, player, program, pr_matrix);
+            
+            set.draw_hearts(&hearts, player, program, pr_matrix);
+            
+            for i in 0..max {
+                set.draw_bounce(&b_slice[i], program, pr_matrix);
+                set.update_bounce(&b_slice[i], delta);
             }
-            p_index = i;
-        } else {
-            power_timer -= delta;
-            if power_timer <= 0.0 {
-                power_up_now = true;
-                power_timer = max_power_timer;
+            
+            if add_timer > 0.0 {
+                add_timer -= delta;
+            } else {
+                if max > 50 {
+                    fmt.println("Max");
+                }else{
+                    b_slice[max] = set.create_bounce(&random);
+                    max += 1;
+                    add_timer = 200.0;
+                }
             }
         }
-        set.draw_coin_ui(&coins, player, program, pr_matrix);
-        
-        set.draw_hearts(&hearts, player, program, pr_matrix);
-        
-        for i in 0..max {
-            set.draw_bounce(&b_slice[i], program, pr_matrix);
-            set.update_bounce(&b_slice[i], delta);
-        }
-        
-        if add_timer > 0.0 {
-            add_timer -= delta;
-        } else {
-            if max > 50 {
-                fmt.println("Max");
-            }else{
-                b_slice[max] = set.create_bounce(&random);
-                max += 1;
-                add_timer = 200.0;
-            }
-        }
-        
         draw_background(&background, program, pr_matrix);
         
         glfw.SwapBuffers(window);

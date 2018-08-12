@@ -2,10 +2,14 @@ package input
 
 import "shared:odin-glfw"
 
+import "../math"
+
 game_input :: struct {
 	keys: [348]bool,
 
-	up, down, left, right: bool
+	up, down, left, right: bool,
+
+	mouse_pos: math.v2,
 }
 
 update :: proc(input: ^game_input, keys: [348]bool) {

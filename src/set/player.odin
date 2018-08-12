@@ -314,3 +314,37 @@ update_power_up :: proc(power_up: ^power_up_set, player: ^player_set, random: ^r
 	}
     return false, index;
 }
+
+//Buttons
+button_type :: enum {
+	PLAY,
+	QUIT,
+}
+
+button_set :: struct {
+	aabb: AABB,
+	sprite: sprite_component,
+	b_type: button_type,
+}
+
+create_button :: proc(pos: math.v2, b_type: button_type) -> button_set {
+	result: button_set;
+	result.b_type = b_type;
+	switch b_type {
+		case button_type.PLAY : result.sprite.sprite = renderer.init_sprite(pos, math.v2{2.5, 1.5}, "art/play.png");
+		case button_type.QUIT : result.sprite.sprite = renderer.init_sprite(pos, math.v2{2.5, 1.5}, "art/quit.png");
+	}
+	result.aabb.transform = result.sprite.transform;
+
+	return result;
+}
+
+draw_button :: proc(button: ^button_set, program: u32, pr_matrix: math.mat4){
+	renderer.use_program(program);
+	renderer.set_uniforms(button.sprite.transform, pr_matrix, program);
+	renderer.draw_sprite(&button.sprite);
+}
+
+update_button :: proc(button: ^button_set, input: input.game_input) -> (bool, bool) { //Returns ShouldQuit and Go to next
+	return false, false;
+}
