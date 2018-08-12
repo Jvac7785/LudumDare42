@@ -48,7 +48,11 @@ main :: proc()
     }
     glfw.SetKeyCallback(window, key_callback);
     
-    glfw.WindowHint(glfw.CONTEXT_VERSION_MAJOR, 4);
+    cursor_position_callback :: proc"c"(window: glfw.Window_Handle, xpos, ypos: f64) {
+    }
+    glfw.SetCursorPosCallback(window, cursor_position_callback);
+
+    glfw.WindowHint(glfw.CONTEXT_VERSION_MAJOR, 3);
     glfw.WindowHint(glfw.CONTEXT_VERSION_MINOR, 3);
     glfw.WindowHint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE);
     
@@ -112,8 +116,8 @@ main :: proc()
         gl.ClearColor(0.0, 0.0, 1.0, 1.0);
         
         glfw.PollEvents();
-        input.update(&game_input, keys);
-        
+        input.update(&game_input, window, keys);
+
         gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         
         if state == Game_State.MENU {
@@ -121,6 +125,14 @@ main :: proc()
             player.score = 0;
             set.draw_button(&play_button, program, pr_matrix);
             set.draw_button(&quit_button, program, pr_matrix);
+            play := set.update_button(&play_button, &game_input);
+            quit := set.update_button(&quit_button, &game_input);
+            fmt.println(play, quit);
+            if play {
+                state = Game_State.GAME;
+            }else if quit {
+                glfw.SetWindowShouldClose(window, true);
+            }
         }
 
         if state == Game_State.GAME{
@@ -167,6 +179,13 @@ main :: proc()
                     add_timer = 200.0;
                 }
             }
+            if player.health <= 0 {
+                state = Game_State.LOSE;
+            }
+        }
+        if state == Game_State.LOSE {
+            fmt.println("You died your final score was ", player.score);
+            glfw.SetWindowShouldClose(window, true);
         }
         draw_background(&background, program, pr_matrix);
         

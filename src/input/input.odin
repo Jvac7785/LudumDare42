@@ -12,7 +12,7 @@ game_input :: struct {
 	mouse_pos: math.v2,
 }
 
-update :: proc(input: ^game_input, keys: [348]bool) {
+update :: proc(input: ^game_input, window: glfw.Window_Handle, keys: [348]bool) {
 	if keys[glfw.KEY_W] {
 		input.up = true;
 	} else {
@@ -33,4 +33,8 @@ update :: proc(input: ^game_input, keys: [348]bool) {
 	} else {
 		input.right = false;
 	}
+
+	tempx, tempy := glfw.GetCursorPos(window);
+	input.mouse_pos.x = cast(f32)tempx/100;
+	input.mouse_pos.y = cast(f32)tempy/100;
 }

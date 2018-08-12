@@ -345,6 +345,17 @@ draw_button :: proc(button: ^button_set, program: u32, pr_matrix: math.mat4){
 	renderer.draw_sprite(&button.sprite);
 }
 
-update_button :: proc(button: ^button_set, input: input.game_input) -> (bool, bool) { //Returns ShouldQuit and Go to next
-	return false, false;
+update_button :: inline proc(button: ^button_set, input: ^input.game_input) -> bool {
+	return aabb_agains_v2(button.aabb, input.mouse_pos);
+}
+
+aabb_agains_v2 :: proc(aabb: AABB, v2: math.v2) -> bool{
+	if 	aabb.pos.x - aabb.scale.x/2 < v2.x		||
+        aabb.pos.x + aabb.scale.x/2 > v2.x 		||
+        aabb.pos.y - aabb.scale.y/2 < v2.y		||
+        aabb.pos.y + aabb.scale.y/2 > v2.y {
+        return true;
+    }else {
+        return false;
+    }
 }
